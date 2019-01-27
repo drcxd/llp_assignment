@@ -39,9 +39,21 @@ print_char:
 
 print_newline:
     mov rdi, 0xA
-    call print_char
+    jmp print_char
     ret
 
+
+print_int:
+    ;; first the sign
+    cmp rdi, 0
+    jge .pos
+    push rdi
+    mov rdi, 0x2d
+    call print_char
+    pop rdi
+    neg rdi
+
+    .pos:
 print_uint:
     test rdi, rdi
     jnz .not_zero
@@ -75,22 +87,7 @@ print_uint:
     call string_length
     add rsp, rax
     inc rsp
-    ret
-
-print_int:
-    ;; first the sign
-    cmp rdi, 0
-    jge .pos
-    push rdi
-    mov rdi, 0x2d
-    call print_char
-    pop rdi
-    neg rdi
-
-    .pos:
-    call print_uint
-
-    ret
+    ret    
 
 read_char:
     dec rsp
