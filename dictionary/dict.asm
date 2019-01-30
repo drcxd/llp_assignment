@@ -1,10 +1,6 @@
-    global _start
     extern string_equals
-
-    %include "words.inc"
-
-    section .data
-key_name:   db "first word", 0
+    global find_word
+    
     section .text
 
     ;; rdi key string
@@ -21,7 +17,7 @@ find_word:
 
     cmp rax, 1
     jz .found
-    lea r12, [r12]
+    mov r12, [r12]
     jmp .loop
 
     .found:
@@ -34,11 +30,3 @@ find_word:
     pop r12
     ret
 
-_start:
-    mov rdi, key_name
-    mov rsi, last
-    call find_word
-
-    mov rdi, rax
-    mov rax, 60
-    syscall

@@ -2,12 +2,12 @@
 
     section .data
 
-    colon "third word", third_word
-    db "third word explanation", 0
+    colon "dota", third_word
+    db "a game", 0xa, 0
 
-    colon "second word", second_word
-    db "second word explanation", 0
+    colon "apple", second_word
+    db "a kind of fruit", 0xa, 0
 
-    colon "first word", first_word
-    db "first word explanation", 0
+    colon "memory", first_word
+    db "a component of modern computer", 0xa, 0
     
