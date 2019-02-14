@@ -13,7 +13,9 @@ find_word:
     jz .not_found
 
     lea rsi, [r12 + 8]          ; rsi point to the key string now
+    push rdi
     call string_equals          ; rax holds the string length
+    pop rdi
 
     cmp rax, 1
     jz .found
