@@ -8,9 +8,9 @@ w_%+%2:
     db %1, 0
     db %3
 xt_%+%2:    
-    dq %2%+_impl
+    dq i_%+%2
     section .text
-%2%+_impl:
+i_%+%2:
     %endmacro
 
     %macro native 2
@@ -25,7 +25,7 @@ w_%+%2:
     db %1, 0
     db %3
 xt_%+%2:
-    dq docol_impl
+    dq i_docol
     %endmacro
 
     %macro colon 2
