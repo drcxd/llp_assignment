@@ -14,6 +14,9 @@
 rstack_start:   resq 1
 input_buf:  resb 1024
 
+    section .data
+last_word:  dq last
+
     section .rodata
 msg_no_such_word:   db ": no such word", 10, 0
 

@@ -1,7 +1,7 @@
     %define last 0
 
     %macro native 3
-    section.data
+    section .data
 w_%+%2: 
     dq last
     %define last w_%+%2

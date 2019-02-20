@@ -14,13 +14,13 @@
     jmp next
 
     native "find", find
-    mov rsi, last
+    mov rsi, [last_word]
     .loop:
     test rsi, rsi
     jz .not_found
     mov rdi, [rsp]
     push rsi
-    add rsi, 8    
+    add rsi, 8
     call string_equals
     pop rsi
     test rax, rax
@@ -50,7 +50,7 @@
     native "0branch", branch0
     pop rax
     test rax, rax
-    jz .skip
+    jnz .skip
     add pc, [pc]
     .skip:
     add pc, 8
@@ -60,6 +60,19 @@
     add pc, [pc]
     add pc, 8
     jmp next
+
+    native ".S", show_stack
+    mov rcx, rsp
+    .loop:
+    cmp rcx, [stack_base]
+    jz next
+    mov rdi, [rcx]
+    push rcx
+    call print_int
+    call print_newline
+    pop rcx
+    add rcx, 8
+    jmp .loop
 
     section .rodata
 interpreter_stub:   dq xt_interpreter
@@ -96,7 +109,32 @@ stack_base: dq 0
     pop rax
     mov w, rax
     jmp [rax]
-    
+
+    native "number", number
+    pop rdi
+    call parse_int
+    push rax
+    push rdx
+    jmp next
+
+    native "prints", prints
+    pop rdi
+    call print_string
+    jmp next
+
+    native "lit", lit
+    push qword [pc]
+    add pc, 8
+    jmp next
+
+    native "bye", bye
+    mov rax, 60
+    xor rdi, rdi
+    syscall
+
+    native "exit", exit
+    rpop pc
+    jmp next
 
     colon "interpreter", interpreter
     .start:
@@ -110,7 +148,7 @@ stack_base: dq 0
     dq xt_cfa
     dq xt_execute
     branch .start
-    
+
     .number:
     dq xt_drop
     dq xt_drop
