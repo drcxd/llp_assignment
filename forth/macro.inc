@@ -31,3 +31,23 @@ xt_%+%2:
     %macro colon 2
     colon %1, %2, 0
     %endmacro
+
+    %macro rpush 1
+    sub rstack, 8
+    mov qword [rstack], %1
+    %endmacro
+
+    %macro rpop 1
+    mov %1, qword [rstack]
+    add rstack, 8
+    %endmacro
+
+    %macro branch 1
+    dq xt_branch
+    dq %1 - $ - 8
+    %endmacro
+
+    %macro branch0 1
+    dq xt_branch0
+    dq %1 - $ - 8
+    %endmacro
