@@ -74,6 +74,165 @@
     add rcx, 8
     jmp .loop
 
+    native "+", plus
+    pop rax
+    add [rsp], rax
+    jmp next
+
+    native "-", minus
+    pop rax
+    sub [rsp], rax
+    jmp next
+
+    native "*", mul
+    pop rcx
+    pop rax
+    imul rcx
+    push rax
+    jmp next
+
+    native "/", div
+    pop rcx
+    pop rax
+    cqo                         ; signed extend of rax
+    idiv rcx
+    push rax
+    jmp next
+
+    native "%", mod
+    pop rcx
+    pop rax
+    cqo
+    idiv rcx
+    push rdx
+    jmp next
+
+    native "=", equals
+    pop rax
+    pop rcx
+    test rax, rcx
+    sete al
+    movzx rax, al
+    push rax
+    jmp next
+
+    native "<", less
+    pop rax
+    pop rcx
+    cmp rcx, rax
+    setb al
+    movzx rax, al
+    push rax
+    jmp next
+
+    native "not", not
+    pop rax
+    test rax, rax
+    setz al
+    movzx rax, al
+    push rax
+
+    native "and", and
+    pop rax
+    pop rcx
+    test rax, rax
+    jz .zero
+    test rcx, rcx
+    jz .zero
+    mov rax, 1
+    push rax
+    jmp next
+    .zero:
+    xor rax, rax
+    push rax
+    jmp next
+
+    native "rot", rot
+    pop rax
+    pop rcx
+    pop rdx
+    push rcx
+    push rax
+    push rdx
+    jmp next
+
+    native "swap", swap
+    pop rax
+    pop rcx
+    push rax
+    push rcx
+    jmp next
+
+    native ".", dot
+    pop rdi
+    call print_int
+    call print_newline
+    jmp next
+
+    native "key", key
+    call read_char
+    push rax
+    jmp next
+
+    native "emit", emit
+    pop rdi
+    call print_char
+    ;; call print_newline
+    jmp next
+
+    native "mem", mem
+    push qword user_mem
+    jmp next
+
+    native "!", write
+    pop rax
+    pop rcx
+    mov [rcx], rax
+    jmp next
+
+    native "@", fetch
+    pop rax
+    push qword [rax]
+    jmp next
+
+    native "c@", fetch_char
+    pop rax
+    movzx rax, byte [rax]
+    push rax
+    jmp next
+
+    native "here", here
+    push qword here
+    jmp next
+
+    native "create", create
+    mov rax, [last_word]
+    mov rsi, [here]
+    mov [rsi], rax
+    add rsi, 8
+
+    pop rdi
+    push rsi
+    call string_copy
+    pop rsi
+    push rsi
+    mov rdi, rsi
+    call string_length
+    pop rsi
+    add rsi, rax
+
+    inc rsi
+    pop rax
+    mov [rsi], al
+    inc rsi
+
+    mov [here], rsi
+    jmp next
+
+    native "state", state
+    push qword state
+    jmp next    
+
     section .rodata
 interpreter_stub:   dq xt_interpreter
 
@@ -136,6 +295,27 @@ stack_base: dq 0
     rpop pc
     jmp next
 
+    native ",", comma
+    mov rax, [here]
+    pop qword [rax]
+    add qword [here], 8
+    jmp next
+
+    colon ":", colon
+    .restart:
+    dq xt_inbuf, xt_word
+    branch0 .restart
+    dq xt_lit, 0, xt_inbuf, xt_create
+    dq xt_state, xt_lit, 1, xt_write
+    dq xt_lit, i_docol, xt_comma
+    dq xt_exit
+
+    colon ";", semicolon, 1
+    dq xt_state, xt_lit, 0, xt_write
+    dq xt_lit, xt_exit, xt_comma
+    dq xt_exit
+    
+
     colon "interpreter", interpreter
     .start:
     dq xt_inbuf, xt_word
@@ -146,6 +326,18 @@ stack_base: dq 0
     dq xt_dup
     branch0 .number
     dq xt_cfa
+
+    dq xt_state, xt_fetch
+    branch0 .interpreting
+
+    dq xt_dup
+    dq xt_lit, 1, xt_minus, xt_fetch_char, xt_not
+    branch0 .interpreting
+
+    dq xt_comma
+    branch .start
+
+    .interpreting:
     dq xt_execute
     branch .start
 
@@ -155,6 +347,24 @@ stack_base: dq 0
     dq xt_inbuf
     dq xt_number
     branch0 .no_word
+
+    dq xt_state, xt_fetch
+    branch0 .start
+
+    dq xt_here, xt_lit, 8, xt_minus
+    dq xt_lit, xt_branch0
+    dq xt_equals, xt_not
+    branch0 .is_branch
+
+    dq xt_here, xt_lit, 8, xt_minus
+    dq xt_lit, xt_branch
+    dq xt_equals, xt_not
+    branch0 .is_branch
+
+    dq xt_lit, xt_lit, xt_comma
+
+    .is_branch:
+    dq xt_comma
     branch .start
 
     .no_word:
