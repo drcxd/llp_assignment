@@ -2,77 +2,25 @@
     add rsp, 8
     jmp next
 
-    native "inbuf", inbuf
-    push qword input_buf
-    jmp next
-
-    native "word", word
-    pop rdi
-    mov rsi, 1024
-    call read_word
-    push rdx
-    jmp next
-
-    native "find", find
-    mov rsi, [last_word]
-    .loop:
-    test rsi, rsi
-    jz .not_found
-    mov rdi, [rsp]
-    push rsi
-    add rsi, 8
-    call string_equals
-    pop rsi
-    test rax, rax
-    jnz .found
-    mov rsi, [rsi]
-    jmp .loop
-
-    .not_found:
-    mov qword [rsp], 0
-    push 0
-    jmp next
-
-    .found:
-    mov [rsp], rsi
-    jmp next
-
-    native "docol", docol
-    rpush pc
-    add w, 8
-    mov pc, w
+    native "swap", swap
+    pop rax
+    pop rcx
+    push rax
+    push rcx
     jmp next
 
     native "dup", dup
     push qword [rsp]
     jmp next
 
-    native "0branch", branch0
+    native "rot", rot
     pop rax
-    test rax, rax
-    jnz .skip
-    add pc, [pc]
-    .skip:
-    add pc, 8
-    jmp next
-
-    native "branch", branch
-    add pc, [pc]
-    add pc, 8
-    jmp next
-
-    native ".S", show_stack
-    mov rcx, rsp
-    .loop:
-    cmp rcx, [stack_base]
-    jz next
-    mov rdi, [rcx]
-    push rcx
-    call print_int
-    call print_newline
     pop rcx
-    add rcx, 8
-    jmp .loop
+    pop rdx
+    push rcx
+    push rax
+    push rdx
+    jmp next    
 
     native "+", plus
     pop rax
@@ -116,14 +64,14 @@
     push rax
     jmp next
 
-    native "<", less
-    pop rax
-    pop rcx
-    cmp rcx, rax
-    setb al
-    movzx rax, al
-    push rax
-    jmp next
+    ;; native "<", less
+    ;; pop rax
+    ;; pop rcx
+    ;; cmp rcx, rax
+    ;; setb al
+    ;; movzx rax, al
+    ;; push rax
+    ;; jmp next
 
     native "not", not
     pop rax
@@ -131,36 +79,12 @@
     setz al
     movzx rax, al
     push rax
-
-    native "and", and
-    pop rax
-    pop rcx
-    test rax, rax
-    jz .zero
-    test rcx, rcx
-    jz .zero
-    mov rax, 1
-    push rax
-    jmp next
-    .zero:
-    xor rax, rax
-    push rax
     jmp next
 
-    native "rot", rot
-    pop rax
-    pop rcx
-    pop rdx
-    push rcx
+    native "count", count
+    pop rdi
+    call string_length
     push rax
-    push rdx
-    jmp next
-
-    native "swap", swap
-    pop rax
-    pop rcx
-    push rax
-    push rcx
     jmp next
 
     native ".", dot
@@ -169,69 +93,18 @@
     call print_newline
     jmp next
 
-    native "key", key
-    call read_char
-    push rax
-    jmp next
-
-    native "emit", emit
-    pop rdi
-    call print_char
-    ;; call print_newline
-    jmp next
-
-    native "mem", mem
-    push qword user_mem
-    jmp next
-
-    native "!", write
-    pop rax
+    native ".S", show_stack
+    mov rcx, rsp
+    .loop:
+    cmp rcx, [stack_base]
+    jz next
+    mov rdi, [rcx]
+    push rcx
+    call print_int
+    call print_newline
     pop rcx
-    mov [rcx], rax
-    jmp next
-
-    native "@", fetch
-    pop rax
-    push qword [rax]
-    jmp next
-
-    native "c@", fetch_char
-    pop rax
-    movzx rax, byte [rax]
-    push rax
-    jmp next
-
-    native "here", here
-    push qword here
-    jmp next
-
-    native "create", create
-    mov rax, [last_word]
-    mov rsi, [here]
-    mov [rsi], rax
-    add rsi, 8
-
-    pop rdi
-    push rsi
-    call string_copy
-    pop rsi
-    push rsi
-    mov rdi, rsi
-    call string_length
-    pop rsi
-    add rsi, rax
-
-    inc rsi
-    pop rax
-    mov [rsi], al
-    inc rsi
-
-    mov [here], rsi
-    jmp next
-
-    native "state", state
-    push qword state
-    jmp next    
+    add rcx, 8
+    jmp .loop
 
     section .rodata
 interpreter_stub:   dq xt_interpreter
@@ -249,6 +122,54 @@ stack_base: dq 0
     mov [stack_base], rsp
     jmp next
 
+    native "docol", docol
+    rpush pc
+    add w, 8
+    mov pc, w
+    jmp next
+
+    native "exit", exit
+    rpop pc
+    jmp next
+
+    native ">r", to_r
+    pop rax
+    rpush rax
+    jmp next
+
+    native "r>", from_r
+    rpop rax
+    push rax
+    jmp next
+
+    native "r@", r_fetch
+    push qword [rstack]    
+    jmp next
+    
+    native "find", find
+    mov rsi, [last_word]
+    .loop:
+    test rsi, rsi
+    jz .not_found
+    mov rdi, [rsp]
+    push rsi
+    add rsi, 8
+    call string_equals
+    pop rsi
+    test rax, rax
+    jnz .found
+    mov rsi, [rsi]
+    jmp .loop
+
+    .not_found:
+    mov qword [rsp], 0
+    push 0
+    jmp next
+
+    .found:
+    mov [rsp], rsi
+    jmp next
+
     native "cfa", cfa
     pop rsi
     add rsi, 8
@@ -264,10 +185,18 @@ stack_base: dq 0
     push rsi
     jmp next
 
-    native "execute", execute
-    pop rax
-    mov w, rax
-    jmp [rax]
+    native "emit", emit
+    pop rdi
+    call print_char
+    ;; call print_newline
+    jmp next
+
+    native "word", word
+    pop rdi
+    mov rsi, 1024
+    call read_word
+    push rdx
+    jmp next
 
     native "number", number
     pop rdi
@@ -281,25 +210,142 @@ stack_base: dq 0
     call print_string
     jmp next
 
-    native "lit", lit
-    push qword [pc]
-    add pc, 8
-    jmp next
-
     native "bye", bye
     mov rax, 60
     xor rdi, rdi
     syscall
 
-    native "exit", exit
-    rpop pc
+    native "syscall", syscall
+    pop r9
+    pop r8
+    pop r10
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    syscall
+    push rax
     jmp next
 
+    native "branch", branch
+    add pc, [pc]
+    add pc, 8
+    jmp next
+
+    native "0branch", branch0
+    pop rax
+    test rax, rax
+    jnz .skip
+    add pc, [pc]
+    .skip:
+    add pc, 8
+    jmp next
+
+    native "lit", lit
+    push qword [pc]
+    add pc, 8
+    jmp next
+    
+    native "inbuf", inbuf
+    push qword input_buf
+    jmp next
+
+    native "mem", mem
+    push qword user_mem
+    jmp next
+
+    native "last_word", last_word
+    push qword last_word
+    jmp next
+
+    native "state", state
+    push qword state
+    jmp next        
+
+    native "here", here
+    push qword here
+    jmp next
+
+    native "execute", execute
+    pop rax
+    mov w, rax
+    jmp [rax]
+
+    native "@", fetch
+    pop rax
+    push qword [rax]
+    jmp next
+    
+    native "!", write
+    pop rax
+    pop rcx
+    mov [rcx], rax
+    jmp next    
+
+    native "@c", fetch_char
+    pop rax
+    movzx rax, byte [rax]
+    push rax
+    jmp next
+    
     native ",", comma
     mov rax, [here]
     pop qword [rax]
     add qword [here], 8
     jmp next
+
+    native "c,", char_comma
+    mov rax, [here]
+    pop rdx
+    mov byte [rax], dl
+    add qword [here], 1
+    jmp next
+
+    native "create", create
+    mov rax, [last_word]
+    mov rsi, [here]
+    mov [rsi], rax
+    mov [last_word], rsi
+    add rsi, 8
+
+    pop rdi
+    push rsi
+    mov rdx, 1024
+    call string_copy
+    pop rsi
+    push rsi
+    mov rdi, rsi
+    call string_length
+    pop rsi
+    add rsi, rax
+
+    inc rsi
+    pop rax
+    mov [rsi], al
+    inc rsi
+
+    mov [here], rsi
+    jmp next    
+
+    ;; native "and", and
+    ;; pop rax
+    ;; pop rcx
+    ;; test rax, rax
+    ;; jz .zero
+    ;; test rcx, rcx
+    ;; jz .zero
+    ;; mov rax, 1
+    ;; push rax
+    ;; jmp next
+    ;; .zero:
+    ;; xor rax, rax
+    ;; push rax
+    ;; jmp next    
+
+    ;; native "key", key
+    ;; call read_char
+    ;; push rax
+    ;; jmp next    
 
     colon ":", colon
     .restart:
