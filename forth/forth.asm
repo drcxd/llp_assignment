@@ -23,6 +23,7 @@ here:   dq user_dict
 
     section .rodata
 msg_no_such_word:   db ": no such word", 10, 0
+hello_world:    db "hello, world", 10, 0
 
     section .text
 next:

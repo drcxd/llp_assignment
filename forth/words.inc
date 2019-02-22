@@ -58,7 +58,7 @@
     native "=", equals
     pop rax
     pop rcx
-    test rax, rcx
+    cmp rax, rcx
     sete al
     movzx rax, al
     push rax
@@ -360,6 +360,66 @@ stack_base: dq 0
     dq xt_state, xt_lit, 0, xt_write
     dq xt_lit, xt_exit, xt_comma
     dq xt_exit
+
+    ;; (a b -- s)
+    ;; s = 0 if a % b ==0 
+    ;; s = 1 if a % b != 0
+    colon "divisible", divisible
+    dq xt_mod, xt_not, xt_exit
+
+    ;; (num -- r)
+    ;; r = 1 if num is prime number
+    ;; else r = 0
+    colon "is_prime", is_prime
+    dq xt_dup, xt_lit, 2, xt_div
+    dq xt_to_r,
+    .loop:
+    dq xt_dup, xt_from_r, xt_dup, xt_lit, 1, xt_minus, xt_dup
+    dq xt_lit, 0, xt_equals, xt_not
+    branch0 .is_prime
+
+    dq xt_to_r, xt_mod, xt_lit, 0, xt_equals, xt_not
+    branch0 .not_prime
+    branch .loop
+
+    .is_prime:
+    dq xt_drop, xt_drop, xt_drop, xt_drop, xt_lit, 1, xt_exit
+
+    .not_prime:
+    dq xt_from_r, xt_drop, xt_drop, xt_lit, 0, xt_exit
+
+    ;; (n -- )
+    ;; out put the first n fibonacci numbers 1 1 2 3 5 ...
+    colon "fib", fib
+    dq xt_dup, xt_lit, 1, xt_equals, xt_not
+    branch0 .one    
+
+    dq xt_dup, xt_lit, 2, xt_equals, xt_not
+    branch0 .two
+
+    dq xt_lit, 1, xt_dot, xt_lit, 1, xt_dot
+    dq xt_lit, 2, xt_minus, xt_to_r, xt_lit, 1, xt_lit, 1
+    .loop:
+    dq xt_dup, xt_to_r, xt_plus, xt_dup, xt_dot
+    dq xt_from_r, xt_from_r
+    dq xt_lit, 1, xt_minus, xt_dup, xt_lit, 0, xt_equals, xt_not
+    branch0 .finish
+    dq xt_to_r, xt_swap
+    branch .loop
+
+    .finish:
+    dq xt_drop, xt_drop, xt_drop, xt_exit
+
+    .one:
+    dq xt_drop, xt_lit, 1, xt_dot, xt_exit
+
+    .two:
+    dq xt_drop, xt_lit, 1, xt_dot, xt_lit, 1, xt_dot, xt_exit
+
+    colon "hello", hello
+    dq xt_lit, 1, xt_lit, 1, xt_lit, hello_world, xt_lit, 13
+    dq xt_lit, 0, xt_lit, 0, xt_lit, 0
+    dq xt_syscall, xt_exit
     
 
     colon "interpreter", interpreter
