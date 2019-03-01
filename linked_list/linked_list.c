@@ -59,7 +59,7 @@ void list_add_back(struct node** plist, int v)
     new_node->v = v;
     new_node->next = NULL;
     
-    while (head)
+    while (head->next)
     {
         head = head->next;
     }
