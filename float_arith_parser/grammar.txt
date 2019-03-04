@@ -1,0 +1,7 @@
+<notzero> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+<digit> ::= '0' | <notzero>
+<raw> ::= <digit> | <digit> <raw>
+<int> ::= <digit> | <notzero> <raw>
+<dot> ::= '.'
+<float> ::= <int> <dot> <raw> | <dot> <raw> | <int> <dot>
+<expr> ::= <float> | <float> '+' <expr> | <float> '-' <expr> | <float> '*' <expr>
