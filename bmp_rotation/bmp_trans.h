@@ -43,7 +43,13 @@ struct bmp_header
 #pragma pack(pop)
 
 void from_bmp(FILE *in, struct bmp_header *header, struct image *read);
-void to_bmp(FILE *out, struct bmp_header *header, struct image *write);
+void to_bmp(FILE *out, const struct bmp_header *header, const struct image *write);
+struct image rotate(const struct image* in);
+struct image blur(const struct image* in);
+struct image erode(const struct image* in); // min
+struct image dilate(const struct image* in); // max
+struct image rotate_any_degree(const struct image* in, int32_t degree); // -90 < degeree < 0
+ uint32_t get_padding_per_row(uint32_t w, uint32_t h, uint16_t bits);
 
 void debug_print_header(struct bmp_header *header);
 

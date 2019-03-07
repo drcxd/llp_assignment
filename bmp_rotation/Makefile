@@ -1,15 +1,16 @@
-FLAGS = -pedantic -Wall -Werror -std=c11
+FLAGS = -pedantic -Wall -Werror -std=c11 -g
 
-all : img_rot
+all : main
 
-img_rot : image_rot.o bmp_trans.o
-	gcc $(FLAGS) -o img_rot image_rot.o bmp_trans.o
+main : main.o bmp_trans.o
+	gcc $(FLAGS) -o main main.o bmp_trans.o -lm
 
-image_rot.o :
-	gcc $(FLAGS) -c image_rot.c
+
+main.o : main.c
+	gcc $(FLAGS) -c main.c
 
 bmp_trans.o : bmp_trans.c
 	gcc $(FLAGS) -c bmp_trans.c
 
 clean :
-	rm *.o img_rot
+	rm *.o main
