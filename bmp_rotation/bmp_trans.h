@@ -49,7 +49,9 @@ struct image blur(const struct image* in);
 struct image erode(const struct image* in); // min
 struct image dilate(const struct image* in); // max
 struct image rotate_any_degree(const struct image* in, int32_t degree); // -90 < degeree < 0
- uint32_t get_padding_per_row(uint32_t w, uint32_t h, uint16_t bits);
+struct image sepia_filt_c(const struct image* in);
+struct image sepia_filt_simd(const struct image* in);
+uint32_t get_padding_per_row(uint32_t w, uint32_t h, uint16_t bits);
 
 void debug_print_header(struct bmp_header *header);
 

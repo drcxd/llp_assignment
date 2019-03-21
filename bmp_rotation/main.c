@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include "bmp_trans.h"
 
@@ -20,9 +22,23 @@ int main(int argc, char *argv[])
 
     struct bmp_header org_header;
     struct image org_img;
-    from_bmp(in, &org_header, &org_img);    
-        
-    struct image trans_img = rotate_any_degree(&org_img, -45);
+    from_bmp(in, &org_header, &org_img);
+
+    debug_print_header(&org_header);
+
+    struct rusage r;
+    struct timeval start;
+    struct timeval end;
+    
+    getrusage(RUSAGE_SELF, &r);
+    start = r.ru_utime;
+    /* struct image trans_img = sepia_filt_simd(&org_img); */
+    struct image trans_img = sepia_filt_c(&org_img);
+    getrusage(RUSAGE_SELF, &r);
+    end = r.ru_utime;
+
+    long res = ((end.tv_sec - start.tv_sec) * 1000000L) + end.tv_usec - start.tv_usec;
+    printf("Time elapsed in microseconds: %ld\n", res);
 
     struct bmp_header trans_header = org_header;
     trans_header.width = trans_img.width;
@@ -32,12 +48,12 @@ int main(int argc, char *argv[])
     FILE *out = fopen(argv[2], "wb");
     if (!out)
     {
-        fprintf(stderr, "can not open file %s\n", argv[2]);        
+        fprintf(stderr, "can not open file %s\n", argv[2]);
         return 0;
     }
 
     to_bmp(out, &trans_header, &trans_img);
-    
+
     fclose(out);
     fclose(in);
     return 0;

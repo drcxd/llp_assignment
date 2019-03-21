@@ -1,9 +1,25 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <math.h>
+#include <stdalign.h>
 
 #include "bmp_trans.h"
 
+extern void simd_sepia_partial(float[static 4], const float[static 4], const float[static 4], const float[static 4], const float[static 4], const float[static 4]);
+
+static const float c[3][3] =
+{
+    { .393f, .769f, .189f },
+    { .349f, .686f, .168f },
+    { .272f, .543f, .131f }
+};
+
+static const float simd_c[3][6] =
+{
+    { .131f, .168f, .189f, .131f, .168f, .189f },
+    { .543f, .686f, .769f, .543f, .686f, .769f },
+    { .272f, .349f, .393f, .272f, .349f, .393f },
+};
 static char PADDING[4];
 
 typedef struct pixel pixel_selector(const struct pixel *, const struct pixel *, const struct pixel *);
@@ -22,6 +38,16 @@ static struct pixel get_min(
     const struct pixel *c);
 static struct pixel window_trans(uint32_t cent, const struct image *img, pixel_selector* func);
 static struct image window_trans_img(const struct image* in, pixel_selector* func);
+static void sepia_one(struct pixel *pixel);
+static void sepia_simd(struct pixel *pixel);
+static unsigned char sat(uint64_t x)
+{
+    if (x < 256)
+    {
+        return x;
+    }
+    return 255;
+}
 
 void from_bmp(FILE *in, struct bmp_header *header, struct image *read)
 {
@@ -216,4 +242,74 @@ struct image window_trans_img(const struct image* in, pixel_selector* func)
     }
 
     return out;
+}
+
+struct image sepia_filt_c(const struct image* in)
+{
+    struct image sepia;
+    sepia.width = in->width;
+    sepia.height = in->height;
+    sepia.data = malloc(sizeof(struct pixel) * sepia.width * sepia.height);
+    for (uint32_t i = 0; i < sepia.width * sepia.height; ++i)
+    {
+        sepia.data[i] = in->data[i];
+        sepia_one(sepia.data + i);
+    }
+    return sepia;
+}
+
+struct image sepia_filt_simd(const struct image* in)
+{
+    struct image sepia;
+    sepia.width = in->width;
+    sepia.height = in->height;
+    sepia.data = malloc(sizeof(struct pixel) * sepia.width * sepia.height);
+    for (uint32_t i = 0; i < sepia.width * sepia.height; ++i)
+    {
+        sepia.data[i] = in->data[i];
+    }
+    uint32_t i = 0;
+    for (i = 0; i < sepia.width * sepia.height; i += 4)
+    {
+        sepia_simd(sepia.data + i);
+    }
+    i = i - 4;
+    if (i < sepia.width * sepia.height)
+    {
+        for (; i < sepia.width * sepia.height; ++i)
+        {
+            sepia_one(sepia.data + i);
+        }
+    }
+    return sepia;
+}
+
+void sepia_one(struct pixel *pixel)
+{
+    const struct pixel old  = *pixel;
+    pixel->r = sat(old.r * c[0][0] + old.g * c[0][1] + old.b * c[0][2]);
+    pixel->g = sat(old.r * c[1][0] + old.g * c[1][1] + old.b * c[1][2]);
+    pixel->b = sat(old.r * c[2][0] + old.g * c[2][1] + old.b * c[2][2]);
+}
+
+void sepia_simd(struct pixel *pixel)
+{
+    float b[12];
+    float g[12];
+    float r[12];
+    for (uint32_t i = 0; i < 4; ++i)
+    {
+        *(b + i * 3 ) = *(b + i * 3 + 1) = *(b + i * 3 + 2) = (pixel + i)->b;
+        *(g + i * 3 ) = *(g + i * 3 + 1) = *(g + i * 3 + 2) = (pixel + i)->g;
+        *(r + i * 3 ) = *(r + i * 3 + 1) = *(r + i * 3 + 2) = (pixel + i)->r;
+    }
+    simd_sepia_partial(b, g, r, simd_c[0], simd_c[1], simd_c[2]);
+    simd_sepia_partial(b + 4, g + 4, r + 4, simd_c[0] + 1, simd_c[1] + 1, simd_c[2] + 1);
+    simd_sepia_partial(b + 8, g + 8, r + 8, simd_c[0] + 2, simd_c[1] + 2, simd_c[2] + 2);
+    unsigned char res[12];
+    for (uint32_t i = 0; i < 12; ++i)
+    {
+        res[i] = sat(b[i]);
+        *((char*)pixel + i) = res[i];
+    }    
 }
